@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<!-- saved from url=(0049)file:///C:/Users/Admin/Downloads/index%20(2).html -->
+<html lang="th"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>อารมณ์วันนี้ — Mood Palette</title>
+<meta name="description" content="เว็บบันทึกอารมณ์ประจำวัน สีสันสดใส ใช้งานง่าย พร้อมกราฟสรุปสัปดาห์ และบันทึกอัตโนมัติลงในเครื่องของคุณ">
+
+<style>
+  :root{
+    --bg: #0f1226;
+    --card: #141833;
+    --text: #e9ebff;
+    --muted: #c7c9f5;
+    --ring: 0 0 0 3px rgba(255,255,255,0.15);
+    --shadow: 0 10px 30px rgba(0,0,0,0.35);
+    --radius: 16px;
+
+    /* mood colors */
+    --happy: linear-gradient(135deg,#FFE53B 0%,#FF2525 100%);
+    --calm: linear-gradient(135deg,#8EC5FC 0%,#E0C3FC 100%);
+    --energetic: linear-gradient(135deg,#F7971E 0%,#FFD200 100%);
+    --sad: linear-gradient(135deg,#1FA2FF 0%,#12D8FA 50%,#A6FFCB 100%);
+    --stressed: linear-gradient(135deg,#f85032 0%,#e73827 100%);
+    --angry: linear-gradient(135deg,#ff0844 0%,#ffb199 100%);
+    --tired: linear-gradient(135deg,#4e54c8 0%,#8f94fb 100%);
+    --focused: linear-gradient(135deg,#00b09b 0%,#96c93d 100%);
+  }
+
+  *{box-sizing:border-box}
+  html,body{
+    height:100%;
+    background: radial-gradient(1200px 600px at 90% -10%, rgba(255,87,173,0.15), transparent 60%),
+                radial-gradient(900px 500px at -10% 10%, rgba(0,212,255,0.15), transparent 60%),
+                var(--bg);
+    color:var(--text);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans Thai", "Prompt", "Sarabun", sans-serif;
+    letter-spacing: .1px;
+  }
+
+  .container{
+    max-width: 1100px;
+    margin: 32px auto;
+    padding: 0 20px 40px;
+  }
+
+  header{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    margin-bottom: 24px;
+  }
+  .logo{
+    width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#00DBDE,#FC00FF);
+    display:grid;place-items:center;box-shadow:var(--shadow);
+  }
+  .logo svg{width:28px;height:28px;filter: drop-shadow(0 2px 8px rgba(0,0,0,0.4));}
+  h1{
+    font-size: clamp(22px, 4vw, 34px);
+    line-height:1.1;margin:0;
+  }
+  .subtitle{
+    color:var(--muted);margin-top:4px;font-size:14px
+  }
+
+  .grid{
+    display:grid;
+    grid-template-columns: 1.1fr .9fr;
+    gap: 22px;
+  }
+  @media (max-width: 900px){
+    .grid{grid-template-columns: 1fr}
+  }
+
+  .card{
+    background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent 60%), var(--card);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px;
+  }
+  .card h2{
+    margin:6px 0 14px;font-size:18px
+  }
+
+  .mood-grid{
+    display:grid;grid-template-columns: repeat(4, minmax(0,1fr));gap:12px
+  }
+  @media (max-width: 520px){ .mood-grid{grid-template-columns: repeat(2, minmax(0,1fr));} }
+
+  .mood{
+    position:relative;overflow:hidden;border-radius:14px;border:1px solid rgba(255,255,255,.12);
+    padding:14px;cursor:pointer;transition: transform .15s ease, box-shadow .2s ease;
+    display:flex;align-items:center;gap:10px;min-height:64px;background:rgba(255,255,255,0.02);
+  }
+  .mood:hover{ transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,.25) }
+  .mood input{ display:none }
+  .mood .swatch{width:32px;height:32px;border-radius:10px;flex:0 0 auto;box-shadow: inset 0 0 0 1px rgba(255,255,255,.25)}
+  .mood .name{font-weight:600}
+  .mood.active{ outline: var(--ring); }
+  .mood .emoji{ margin-left:auto;font-size:22px;filter: drop-shadow(0 2px 4px rgba(0,0,0,.25)); }
+
+  .panel{
+    margin-top:14px;display:grid;gap:12px
+  }
+
+  .date-row{
+    display:flex;gap:12px;align-items:center;flex-wrap:wrap
+  }
+  .date-row input[type="date"]{
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.18);
+    color: var(--text);
+    padding:10px 12px;border-radius:10px;outline:none
+  }
+  .taglist{
+    display:flex;gap:8px;flex-wrap:wrap
+  }
+  .tag{
+    background: rgba(255,255,255,0.06);
+    border: 1px dashed rgba(255,255,255,0.26);
+    color: var(--muted); padding:8px 10px;border-radius:999px;font-size:12px
+  }
+
+  textarea{
+    width:100%;min-height:120px;resize:vertical;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.18);
+    color: var(--text);padding:12px;border-radius:12px;outline:none
+  }
+
+  .actions{ display:flex; gap:12px; flex-wrap:wrap; }
+  button{
+    border:0; padding:11px 14px;border-radius:12px; cursor:pointer; font-weight:600;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color:#0d0d1a; box-shadow: 0 10px 20px rgba(0,0,0,.25);
+    transition: transform .15s ease, box-shadow .2s ease, filter .1s;
+  }
+  button:hover{ transform: translateY(-2px); filter: brightness(1.05); }
+  button.secondary{
+    background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+  }
+  button.outline{
+    background: transparent; color: var(--text);
+    border:1px solid rgba(255,255,255,0.25); box-shadow:none
+  }
+
+  /* Summary */
+  .summary-row{
+    display:grid;grid-template-columns:1fr;gap:14px
+  }
+  .legend{
+    display:flex;gap:10px;flex-wrap:wrap
+  }
+  .legend .item{
+    display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.16);
+    font-size:12px;color:var(--muted)
+  }
+  .legend .dot{width:14px;height:14px;border-radius:3px}
+  canvas{ width:100%; height: 220px; background: rgba(255,255,255,0.03); border-radius: 12px; }
+
+  /* History */
+  .history{ display:grid; gap:10px; max-height: 360px; overflow:auto; padding-right: 6px;}
+  .entry{
+    display:grid;grid-template-columns: auto 1fr auto;gap:10px;align-items:center;
+    padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,0.03)
+  }
+  .entry .b{font-weight:700}
+  .entry .s{color:var(--muted);font-size:12px}
+
+  .footer{margin-top:22px;color:var(--muted);font-size:12px;text-align:center}
+  .pill{
+    display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.16);
+  }
+
+  /* mood dynamic background for header */
+  .hero{
+    border-radius: var(--radius);
+    padding:16px;
+    background: linear-gradient(180deg, rgba(255,255,255,.06), transparent 40%), rgba(255,255,255,0.02);
+    border:1px solid rgba(255,255,255,.09);
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M3 12a9 9 0 1118 0 9 9 0 01-18 0z" stroke="white" stroke-opacity=".9" stroke-width="1.4"></path>
+          <path d="M8 10h.01M16 10h.01" stroke="white" stroke-width="1.6" stroke-linecap="round"></path>
+          <path d="M8 15c1.2 1 2.5 1.5 4 1.5S14.8 16 16 15" stroke="white" stroke-width="1.6" stroke-linecap="round"></path>
+        </svg>
+      </div>
+      <div>
+        <h1>อารมณ์วันนี้ — Mood Palette</h1>
+        <div class="subtitle">บันทึกความรู้สึกของคุณทุกวัน ด้วยสีสันสดใสและกราฟสรุปอัตโนมัติ ข้อมูลเก็บไว้ในเครื่องของคุณเท่านั้น</div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <section class="card">
+        <div class="hero" id="heroBg" style="background: linear-gradient(rgba(255, 255, 255, 0.06), transparent 40%), rgba(255, 255, 255, 0.02);">
+          <h2>เลือกอารมณ์ประจำวัน</h2>
+          <div class="mood-grid" id="moodGrid" role="listbox" aria-label="รายการอารมณ์">
+            <!-- moods inserted by JS -->
+          <label class="mood" role="option" data-id="happy">
+      <input type="radio" name="mood" value="happy">
+      <span class="swatch" style="background:var(--happy)"></span>
+      <span class="name">แฮปปี้</span>
+      <span class="emoji" aria-hidden="true">😊</span>
+    </label><label class="mood" role="option" data-id="calm">
+      <input type="radio" name="mood" value="calm">
+      <span class="swatch" style="background:var(--calm)"></span>
+      <span class="name">สบายใจ</span>
+      <span class="emoji" aria-hidden="true">😌</span>
+    </label><label class="mood" role="option" data-id="energetic">
+      <input type="radio" name="mood" value="energetic">
+      <span class="swatch" style="background:var(--energetic)"></span>
+      <span class="name">กระปรี้กระเปร่า</span>
+      <span class="emoji" aria-hidden="true">⚡</span>
+    </label><label class="mood" role="option" data-id="focused">
+      <input type="radio" name="mood" value="focused">
+      <span class="swatch" style="background:var(--focused)"></span>
+      <span class="name">โฟกัสดี</span>
+      <span class="emoji" aria-hidden="true">🎯</span>
+    </label><label class="mood" role="option" data-id="sad">
+      <input type="radio" name="mood" value="sad">
+      <span class="swatch" style="background:var(--sad)"></span>
+      <span class="name">เศร้า</span>
+      <span class="emoji" aria-hidden="true">😢</span>
+    </label><label class="mood" role="option" data-id="stressed">
+      <input type="radio" name="mood" value="stressed">
+      <span class="swatch" style="background:var(--stressed)"></span>
+      <span class="name">เครียด</span>
+      <span class="emoji" aria-hidden="true">😖</span>
+    </label><label class="mood" role="option" data-id="angry">
+      <input type="radio" name="mood" value="angry">
+      <span class="swatch" style="background:var(--angry)"></span>
+      <span class="name">โกรธ</span>
+      <span class="emoji" aria-hidden="true">😡</span>
+    </label><label class="mood" role="option" data-id="tired">
+      <input type="radio" name="mood" value="tired">
+      <span class="swatch" style="background:var(--tired)"></span>
+      <span class="name">เหนื่อยล้า</span>
+      <span class="emoji" aria-hidden="true">🥱</span>
+    </label></div>
+
+          <div class="panel">
+            <div class="date-row">
+              <label class="pill">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M7 3v4M17 3v4M4 9h16M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg>
+                <span><b>วันที่</b></span>
+              </label>
+              <input type="date" id="dateInput" aria-label="เลือกวันที่">
+              <div class="taglist" id="quickTags">
+                <span class="tag">ทำงานดี</span>
+                <span class="tag">เหนื่อย</span>
+                <span class="tag">ออกกำลังกาย</span>
+                <span class="tag">อ่านหนังสือ</span>
+                <span class="tag">เพื่อน/ครอบครัว</span>
+              </div>
+            </div>
+
+            <label for="note"><b>บันทึก/เหตุการณ์สำคัญ</b></label>
+            <textarea id="note" placeholder="วันนี้รู้สึกอย่างไร เกิดอะไรขึ้นบ้าง..."></textarea>
+
+            <div class="actions">
+              <button id="saveBtn">บันทึกวันนี้</button>
+              <button class="secondary" id="clearBtn" title="ล้างข้อมูลฟอร์ม">ล้างฟอร์ม</button>
+              <button class="outline" id="exportBtn" title="ส่งออกข้อมูลเป็นไฟล์ .json">ส่งออกข้อมูล</button>
+              <button class="outline" id="importBtn" title="นำเข้าข้อมูลจากไฟล์ .json">นำเข้า</button>
+              <input type="file" id="importFile" accept="application/json" style="display:none">
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="card">
+        <h2>สรุปสัปดาห์นี้</h2>
+        <div class="summary-row">
+          <canvas id="weekChart" aria-label="กราฟสรุปอารมณ์ 7 วัน" role="img" width="429" height="220"></canvas>
+          <div class="legend" id="legend"><div class="item"><span class="dot" style="background: rgb(255, 207, 74);"></span>😊 แฮปปี้</div><div class="item"><span class="dot" style="background: rgb(142, 197, 252);"></span>😌 สบายใจ</div><div class="item"><span class="dot" style="background: rgb(247, 151, 30);"></span>⚡ กระปรี้กระเปร่า</div><div class="item"><span class="dot" style="background: rgb(0, 176, 155);"></span>🎯 โฟกัสดี</div><div class="item"><span class="dot" style="background: rgb(31, 162, 255);"></span>😢 เศร้า</div><div class="item"><span class="dot" style="background: rgb(248, 80, 50);"></span>😖 เครียด</div><div class="item"><span class="dot" style="background: rgb(255, 8, 68);"></span>😡 โกรธ</div><div class="item"><span class="dot" style="background: rgb(78, 84, 200);"></span>🥱 เหนื่อยล้า</div></div>
+        </div>
+        <h2 style="margin-top:18px">ประวัติ</h2>
+        <div class="history" id="history"><div class="s">ยังไม่มีข้อมูล ลองบันทึกอันแรกเลย!</div></div>
+      </aside>
+    </div>
+
+    <div class="footer">
+      Tips: คลิกที่แท็กเพื่อเพิ่มในบันทึก | แตะการ์ดอารมณ์อีกครั้งเพื่อยกเลิก | ใช้บนมือถือได้ลื่นไหล 💫
+    </div>
+  </div>
+
+<script>
+(function(){
+  const moods = [
+    { id: 'happy', name: 'แฮปปี้', emoji:'😊', grad:'var(--happy)'     },
+    { id: 'calm', name: 'สบายใจ', emoji:'😌', grad:'var(--calm)'       },
+    { id: 'energetic', name: 'กระปรี้กระเปร่า', emoji:'⚡', grad:'var(--energetic)' },
+    { id: 'focused', name: 'โฟกัสดี', emoji:'🎯', grad:'var(--focused)' },
+    { id: 'sad', name: 'เศร้า', emoji:'😢', grad:'var(--sad)'          },
+    { id: 'stressed', name: 'เครียด', emoji:'😖', grad:'var(--stressed)' },
+    { id: 'angry', name: 'โกรธ', emoji:'😡', grad:'var(--angry)'       },
+    { id: 'tired', name: 'เหนื่อยล้า', emoji:'🥱', grad:'var(--tired)' }
+  ];
+
+  const state = {
+    selectedMood: null,
+    entries: loadEntries()
+  };
+
+  // Populate moods
+  const grid = document.getElementById('moodGrid');
+  moods.forEach(m => {
+    const el = document.createElement('label');
+    el.className = 'mood';
+    el.setAttribute('role','option');
+    el.dataset.id = m.id;
+    el.innerHTML = `
+      <input type="radio" name="mood" value="${m.id}" />
+      <span class="swatch" style="background:${m.grad}"></span>
+      <span class="name">${m.name}</span>
+      <span class="emoji" aria-hidden="true">${m.emoji}</span>
+    `;
+    el.addEventListener('click', () => toggleMood(m));
+    grid.appendChild(el);
+  });
+
+  // Quick tags
+  const noteEl = document.getElementById('note');
+  document.querySelectorAll('#quickTags .tag').forEach(tag => {
+    tag.addEventListener('click', () => {
+      const t = tag.textContent.trim();
+      if(!noteEl.value.includes(t)){
+        noteEl.value = (noteEl.value + (noteEl.value ? ' ' : '') + `#${t}`).trim();
+      }
+    })
+  });
+
+  // Date default = today
+  const dateInput = document.getElementById('dateInput');
+  dateInput.value = todayStr();
+
+  // Buttons
+  document.getElementById('saveBtn').addEventListener('click', saveEntry);
+  document.getElementById('clearBtn').addEventListener('click', clearForm);
+  document.getElementById('exportBtn').addEventListener('click', exportData);
+  document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
+  document.getElementById('importFile').addEventListener('change', importData);
+
+  // History render initially
+  renderHistory();
+  drawChart();
+  syncHero();
+
+  function toggleMood(m){
+    const was = state.selectedMood && state.selectedMood.id === m.id;
+    state.selectedMood = was ? null : m;
+    // toggle UI
+    document.querySelectorAll('.mood').forEach(el => el.classList.remove('active'));
+    if(!was){
+      const active = [...document.querySelectorAll('.mood')].find(el => el.dataset.id===m.id);
+      if(active) active.classList.add('active');
+    }
+    syncHero();
+  }
+
+  function syncHero(){
+    const hero = document.getElementById('heroBg');
+    hero.style.background = state.selectedMood
+      ? `linear-gradient(180deg, rgba(255,255,255,.06), transparent 40%), ${getComputedStyle(document.documentElement).getPropertyValue('--'+state.selectedMood.id)}`
+      : `linear-gradient(180deg, rgba(255,255,255,.06), transparent 40%), rgba(255,255,255,0.02)`;
+  }
+
+  function saveEntry(){
+    const date = dateInput.value || todayStr();
+    if(!date){ alert('กรุณาเลือกวันที่'); return; }
+    if(!state.selectedMood){ alert('เลือกอารมณ์ก่อนนะ'); return; }
+
+    const note = noteEl.value.trim();
+    const entry = { date, mood: state.selectedMood.id, note, ts: Date.now() };
+
+    // overwrite same date
+    const idx = state.entries.findIndex(e => e.date === date);
+    if(idx >= 0) state.entries[idx] = entry; else state.entries.push(entry);
+
+    localStorage.setItem('mood_entries', JSON.stringify(state.entries));
+    animateButton(document.getElementById('saveBtn'));
+    renderHistory();
+    drawChart();
+  }
+
+  function clearForm(){
+    state.selectedMood = null;
+    document.querySelectorAll('.mood').forEach(el => el.classList.remove('active'));
+    noteEl.value = '';
+    dateInput.value = todayStr();
+    syncHero();
+  }
+
+  function loadEntries(){
+    try{ return JSON.parse(localStorage.getItem('mood_entries')) || []; }
+    catch(e){ return []; }
+  }
+
+  function renderHistory(){
+    const box = document.getElementById('history');
+    box.innerHTML = '';
+    const sorted = [...state.entries].sort((a,b)=> b.date.localeCompare(a.date)).slice(0, 30);
+    if(sorted.length === 0){
+      box.innerHTML = `<div class="s">ยังไม่มีข้อมูล ลองบันทึกอันแรกเลย!</div>`;
+      return;
+    }
+    sorted.forEach(e => {
+      const m = moods.find(x => x.id === e.mood) || moods[0];
+      const row = document.createElement('div');
+      row.className = 'entry';
+      row.innerHTML = `
+        <span class="swatch" style="background:${m.grad}; width:22px; height:22px; border-radius:6px"></span>
+        <div>
+          <div class="b">${fmtDate(e.date)} · ${m.emoji} ${m.name}</div>
+          <div class="s">${e.note ? escapeHtml(e.note) : '<em>— ไม่มีบันทึก —</em>'}</div>
+        </div>
+        <button class="outline" data-date="${e.date}" title="ลบรายการนี้">ลบ</button>
+      `;
+      row.querySelector('button').addEventListener('click', () => {
+        state.entries = state.entries.filter(x => x.date !== e.date);
+        localStorage.setItem('mood_entries', JSON.stringify(state.entries));
+        renderHistory();
+        drawChart();
+      });
+      box.appendChild(row);
+    })
+  }
+
+  function drawChart(){
+    const canvas = document.getElementById('weekChart');
+    const ctx = canvas.getContext('2d');
+    // resize for crispness
+    const dpr = window.devicePixelRatio || 1;
+    const W = canvas.clientWidth;
+    const H = canvas.clientHeight;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    ctx.scale(dpr,dpr);
+
+    // clear
+    ctx.clearRect(0,0,W,H);
+
+    // last 7 days
+    const days = [...Array(7)].map((_,i) => addDays(todayStr(), -6 + i));
+    const counts = moods.map(m => ({mood:m, count:0}));
+    const colorMap = moodColorMap();
+
+    days.forEach(d => {
+      const e = state.entries.find(x => x.date === d);
+      if(e){
+        const idx = counts.findIndex(c => c.mood.id === e.mood);
+        if(idx>=0) counts[idx].count++;
+      }
+    });
+
+    // grid
+    ctx.globalAlpha = 0.4;
+    ctx.strokeStyle = 'rgba(255,255,255,0.14)';
+    for(let y=0; y<=4; y++){
+      const yy = 20 + (H-50) * (y/4);
+      ctx.beginPath(); ctx.moveTo(40, yy); ctx.lineTo(W-12, yy); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    // bars stacked per day by mood
+    const dayWidth = (W-60) / 7;
+    days.forEach((d, i) => {
+      const x = 40 + i*dayWidth + 8;
+      const e = state.entries.find(x => x.date === d);
+      let yBase = H - 30;
+      if(e){
+        // single bar colored by mood
+        const m = moods.find(mm => mm.id === e.mood);
+        const grad = gradientFor(ctx, x, yBase-120, 28, 120, colorMap[m.id]);
+        ctx.fillStyle = grad;
+        const barH = 120;
+        ctx.fillRect(x, yBase - barH, 28, barH);
+      } else {
+        // faint placeholder
+        ctx.fillStyle = 'rgba(255,255,255,0.08)';
+        ctx.fillRect(x, yBase - 12, 28, 12);
+      }
+      // day label
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.font = '12px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(shortDay(d), x+14, H-10);
+    });
+
+    // legend
+    const legend = document.getElementById('legend');
+    legend.innerHTML = '';
+    moods.forEach(m => {
+      const item = document.createElement('div');
+      item.className = 'item';
+      const dot = document.createElement('span');
+      dot.className = 'dot';
+      dot.style.background = colorMap[m.id][0];
+      item.appendChild(dot);
+      const txt = document.createTextNode(`${m.emoji} ${m.name}`);
+      item.appendChild(txt);
+      legend.appendChild(item);
+    });
+
+  }
+
+  function moodColorMap(){
+    // pick representative solid colors for legends and chart gradients
+    return {
+      happy: ['#FFCF4A','#FF5C5C'],
+      calm: ['#8EC5FC','#E0C3FC'],
+      energetic: ['#F7971E','#FFD200'],
+      sad: ['#1FA2FF','#A6FFCB'],
+      stressed: ['#F85032','#E73827'],
+      angry: ['#FF0844','#FFB199'],
+      tired: ['#4E54C8','#8F94FB'],
+      focused: ['#00B09B','#96C93D']
+    };
+  }
+
+  function gradientFor(ctx, x,y,w,h, colors){
+    const g = ctx.createLinearGradient(x, y, x+w, y+h);
+    g.addColorStop(0, colors[0]);
+    g.addColorStop(1, colors[1]);
+    return g;
+  }
+
+  function exportData(){
+    const data = JSON.stringify(state.entries, null, 2);
+    const blob = new Blob([data], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'mood_palette_data.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function importData(ev){
+    const file = document.getElementById('importFile').files[0];
+    if(!file) return;
+    try{
+      const text = await file.text();
+      const arr = JSON.parse(text);
+      if(!Array.isArray(arr)) throw new Error('invalid');
+      state.entries = arr;
+      localStorage.setItem('mood_entries', JSON.stringify(state.entries));
+      renderHistory(); drawChart();
+      alert('นำเข้าข้อมูลสำเร็จ!');
+    }catch(e){
+      alert('ไฟล์ไม่ถูกต้อง');
+    } finally {
+      ev.target.value = '';
+    }
+  }
+
+  // helpers
+  function todayStr(){
+    const t = new Date();
+    const y = t.getFullYear();
+    const m = String(t.getMonth()+1).padStart(2,'0');
+    const d = String(t.getDate()).padStart(2,'0');
+    return `${y}-${m}-${d}`;
+  }
+  function addDays(iso, n){
+    const d = new Date(iso);
+    d.setDate(d.getDate()+n);
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const dd = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${dd}`;
+  }
+  function shortDay(iso){
+    const d = new Date(iso);
+    const days = ['อา','จ','อ','พ','พฤ','ศ','ส'];
+    return days[d.getDay()];
+  }
+  function fmtDate(iso){
+    const d = new Date(iso+'T00:00:00');
+    const opts = { year:'numeric', month:'short', day:'numeric' };
+    return d.toLocaleDateString('th-TH', opts);
+  }
+  function escapeHtml(str){
+    return str.replace(/[&<>"']/g,function(m){return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[m];});
+  }
+  function animateButton(btn){
+    btn.style.transform='translateY(-2px) scale(1.01)';
+    btn.style.filter='brightness(1.05)';
+    setTimeout(()=>{ btn.style.transform=''; btn.style.filter=''; }, 180);
+  }
+})();
+</script>
+
+
+</body></html>
